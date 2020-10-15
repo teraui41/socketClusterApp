@@ -2,8 +2,12 @@
 <html>
   <head>
     <title>SocketCluster</title>
-    <link href="//fonts.googleapis.com/css?family=Roboto:100,300" rel="stylesheet" type="text/css">
-    <link rel="icon" type="image/png" href="/favicon.ico">
+    <link
+      href="//fonts.googleapis.com/css?family=Roboto:100,300"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link rel="icon" type="image/png" href="/favicon.ico" />
     <script type="text/javascript" src="/socketcluster-client.js"></script>
     <style>
       html {
@@ -17,11 +21,11 @@
         color: #666666;
         display: table;
         font-weight: 100;
-        font-family: 'Roboto', Helvetica, sans-serif;
+        font-family: "Roboto", Helvetica, sans-serif;
       }
       a {
         font-weight: 300;
-        color: #72B963;
+        color: #72b963;
       }
       .container {
         display: table-cell;
@@ -51,15 +55,20 @@
   <body>
     <div class="container">
       <div class="content">
-        <div class="title">
-          SocketCluster
-        </div>
+        <div class="title">SocketCluster</div>
         <div class="small">
-          <a href="https://socketcluster.io/docs/guides/">Guides</a> <strong>&middot;</strong>
+          <a href="https://socketcluster.io/docs/guides/">Guides</a>
+          <strong>&middot;</strong>
           <a href="https://socketcluster.io/docs/api/">API Docs</a>
         </div>
         <p class="github-button">
-          <iframe src="https://ghbtns.com/github-btn.html?user=socketcluster&repo=socketcluster&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe>
+          <iframe
+            src="https://ghbtns.com/github-btn.html?user=socketcluster&repo=socketcluster&type=star&count=true&size=large"
+            frameborder="0"
+            scrolling="0"
+            width="160px"
+            height="30px"
+          ></iframe>
         </p>
       </div>
     </div>
@@ -68,16 +77,66 @@
       let socket = socketClusterClient.create();
 
       (async () => {
-        for await (let {error} of socket.listener('error')) {
+        for await (let { error } of socket.listener("error")) {
           console.error(error);
         }
       })();
 
+      // 建立 server 連線
       (async () => {
-        for await (let event of socket.listener('connect')) {
-          console.log('Socket is connected');
+        for await (let event of socket.listener("connect")) {
+          console.log("成功建立連線");
         }
       })();
+
+      socket.transmit("customRemoteEvent", "我是 transmit 來的信息");
+
+      (async () => {
+        let result = await socket.invoke("customProc", { foo: "bar" });
+        console.log("接受後端有回傳的信息：", result);
+        // result will be 'Success'
+      })();
+
+      (async () => {
+        let result = await socket.invoke("login", { account: "account", password: "password" });
+      })();
+
+      (async () => {
+        let channel = socket.subscribe("channel_A");
+        for await (let data of channel) {
+          console.log("channel_A 來的資料：", data)
+        }
+      })();
+
+      (async () => {
+        try {
+          await socket.invokePublish('channel_A', '從 Client 廣播出去');
+        } catch (error) {
+          // ... Handle potential error if server does not acknowledge before timeout.
+        }
+      })();
+
+      // Publish to a channel without waiting for acknowledgement
+      socket.transmitPublish('channel_A', '來一碗滷肉飯');
+      socket.transmit('channel_B', '來2碗滷肉飯');
+      socket.transmit('channel_B', '來3碗滷肉飯');
+      
+      setTimeout(() => {
+        socket.transmit('channel_B', '來4碗滷肉飯');
+      }, 1200);
+
+      (async () => {
+        let fooChannel = socket.channel('channel_A');
+        try {
+          // Publish data; wait for an acknowledgement from the server.
+          await fooChannel.invokePublish('來一盤燙青菜');
+        } catch (error) {
+          // ... Handle potential error if server does not acknowledge before timeout.
+        }
+      })();
+      let fooChannel = socket.channel('channel_A');
+      fooChannel.transmitPublish('來一碗貢丸湯');
+
     </script>
   </body>
 </html>
